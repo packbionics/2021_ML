@@ -1,10 +1,12 @@
 import pandas as pd
+import os
 
 
 class IMUDataset:
-    def __init__(self, df):
+    def __init__(self, df=None, path=None):
         self.df = df
-        self.df.dropna(axis=1, inplace=True)
+        self.path = path
+        # self.df.dropna(axis=1, inplace=True)
         self.header = None
     
     def grab_imu_header(self):
@@ -41,11 +43,23 @@ class IMUDataset:
             [new_head.append('{0}_{1}'.format(key.split(':')[0], i)) for i in range(value)]
         
         self.df.columns = new_head
+        
+    def multi_concat(self):
+        concat_df = pd.DataFrame()
+        for file in os.listdir(self.path):
+            df = pd.read_excel(os.path.join(self.path, file), header=None)
+            df.dropna(axis=1, inplace=True)
+            concat_df = pd.concat((concat_df, df), axis=1)
+            
+        print(concat_df)
 
 
 if __name__ == '__main__':
-    path = 'train_data/Keller_Emily_Walking4.xlsx'
-    data = pd.read_excel(path, header=None)
-    imu = IMUDataset(data)
-    header = imu.grab_imu_header()
-    imu.header_from_dict(header)
+    path = 'train_data'
+    # path = 'train_data/Keller_Emily_Walking4.xlsx'
+    # data = pd.read_excel(path, header=None)
+    imu = IMUDataset(path=path)
+    imu.multi_concat()
+    
+    # header = imu.grab_imu_header()
+    # imu.header_from_dict(header)
