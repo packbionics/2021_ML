@@ -152,10 +152,11 @@ if __name__ == '__main__':
                                                                  [scaled_X_train, scaled_X_val, scaled_X_test]))
 
     # plot data --> low pass filter
-    # print(X_train[:, 1])
-    # plt.plot(range(len(scaled_X_train)), filtered_X_train)
-    # plt.show()
+    print(X_train[:, 1])
+    plt.plot(range(len(scaled_X_train)), filtered_X_train)
+    plt.show()
 
+    # TO DO LIST
     # first order, high pass 0.5 Hz cut-off
     # scipy.signal.butter
     # outliers
