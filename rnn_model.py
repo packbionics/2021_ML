@@ -12,7 +12,7 @@ import signal_utils
 
 def training_loop():
     # Model params
-    batch_size = 64
+    batch_size = 4
     hidden_size = 64
     num_features = X.shape[0]
     rnn_layers = 1
@@ -23,7 +23,7 @@ def training_loop():
     
     # Training params
     epochs = 50
-    learning_rate = 0.1
+    learning_rate = 0.01
     weight_decay = 1e-8
 
     # Instantiate model
@@ -124,14 +124,14 @@ if __name__ == '__main__':
     data = pd.read_excel(path)
     # data = data.iloc[:int(len(data)/20)]
     
-    # path = 'train_data/Keller_Emily_Walking4.xlsx'
+    # path = 'ml_data_v2/Keller_Emily_Walking4.xlsx'
     # data = pd.read_excel(path, header=None)
 
-    # # Format dataset
-    # imu = IMUDataset(data)
-    # header = imu.grab_imu_header()
-    # imu.header_from_dict(header)
-    # data = imu.df.copy()
+    # Format dataset
+    imu = IMUDataset(data)
+    header = imu.grab_imu_header()
+    imu.header_from_dict(header)
+    data = imu.df.copy()
 
     # Get features and labels and convert to arrays
     feats_to_use = ['Grav1_0','Grav1_1','Grav1_2','Gyro1_0','Gyro1_1','Gyro1_2','Acc1_0','Acc1_1', 'Acc1_2']
