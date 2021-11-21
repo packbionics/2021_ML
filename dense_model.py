@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from data_preprocessing import IMUDataset
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from model_architecture import RNNDataset, RNNModel
+from model_architecture import NNDataset, NNModel
 import matplotlib.pyplot as plt
 from scipy import signal
 import signal_utils
@@ -13,22 +13,15 @@ import signal_utils
 def training_loop():
     # Model params
     batch_size = 16
-    hidden_size = 64
     num_features = X.shape[0]
-    rnn_layers = 1
-
-    # Dataset params
-    window = 128  # Analogous with 'sequence'
-    offset = 8
     
     # Training params
-    epochs = 50
+    epochs = 100
     learning_rate = 0.0001
-    weight_decay = 1e-8
+    weight_decay = 1e-4
 
     # Instantiate model
-    model = RNNModel(batch_size=batch_size, sequence_size=num_features, hidden_size=hidden_size, 
-                     rnn_layers=rnn_layers).to(device)
+    model = NNModel(num_features).to(device)
     model = model.float()
 
     # Optimizer and loss function
@@ -36,36 +29,33 @@ def training_loop():
     criterion = torch.nn.MSELoss()
 
     # Load train and val datasets
-    train_generator = DataLoader(RNNDataset(X_train, y_train, window, offset=offset), batch_size=batch_size)
-    val_generator = DataLoader(RNNDataset(X_val, y_val, window, offset=offset), batch_size=batch_size)
+    train_generator = DataLoader(NNDataset(X_train, y_train), batch_size=batch_size)
+    val_generator = DataLoader(NNDataset(X_val, y_val), batch_size=batch_size)
 
     # Track loss history with each epoch as one datapoint
     train_loss_history = []
     val_loss_history = []
 
-    # final_epoch_train_X = np.array([])
-    # final_epoch_train_y = np.array([])
-
     # Loop over epochs
     for epoch in range(epochs):
         # Train batch
         batch_train_loss_history = []
+        
+        
 
         for (batch_train_X, batch_train_y) in train_generator:
+            print('shapex', batch_train_X.shape, 'shapey', batch_train_y.shape)
             # Zero out gradients every mini-batch
             optimizer.zero_grad()
-
-            # print('testing', batch_train_X.shape)
-            # Add new axis
-            # batch_train_X = batch_train_X[None, :, :] ##AASDFASDFasdfasdfadsf
 
             # Turn gradients on
             model.train()
 
             # Make predictions
             train_predictions = model(batch_train_X.float())
-            # train_predictions = train_predictions.squeeze(2).squeeze(0)  # reduce to one dimension
-
+            print('preds', train_predictions)
+            print('true', batch_train_y.float())
+            
             # Calculate train loss
             train_loss = criterion(train_predictions, batch_train_y)
             batch_train_loss_history.append(float(train_loss.item()))
@@ -74,31 +64,25 @@ def training_loop():
             train_loss.backward()
             optimizer.step()
 
-            # if epoch == epochs - 1:
-            #     final_epoch_train_X = np.append(final_epoch_train_X, batch_train_X)
-            #     final_epoch_train_y = np.append(final_epoch_train_y, batch_train_y)
-
         # Append average loss across batches
-        train_loss_history.append(sum(batch_train_loss_history) / len(batch_train_loss_history))
+        # train_loss_history.append(sum(batch_train_loss_history) / len(batch_train_loss_history))
+        train_loss_history.append(batch_train_loss_history[-1])
 
         # Validation batch NOTE: after back prop on training
         batch_val_loss_history = []
-        # total_test_preds = []
+        
         for (batch_val_X, batch_val_y) in val_generator:
-            # Add new axis
-            # batch_val_X = batch_val_X[None, :, :]
-
-            # Evaluate model
+            # Evaluate model without updating gradients
             model.eval()
             with torch.no_grad():
                 val_predictions = model(batch_val_X)
             model.train()
-            # val_predictions = val_predictions.squeeze(2).squeeze(0)  # reduce to one dimension
 
             # Calculate validation loss
             val_loss = criterion(val_predictions, batch_val_y)
             batch_val_loss_history.append(float(val_loss.item()))
-        val_loss_history.append(sum(batch_val_loss_history) / len(batch_val_loss_history))
+        # val_loss_history.append(sum(batch_val_loss_history) / len(batch_val_loss_history))
+        val_loss_history.append(batch_val_loss_history[-1])
 
     # torch.save(model, 'trained_model.pt')
 
@@ -112,7 +96,6 @@ def training_loop():
     plt.legend()
     plt.show()
 
-
 if __name__ == '__main__':
 
     # Set device to enable GPU
@@ -120,18 +103,18 @@ if __name__ == '__main__':
     print('DEVICE:', device)
 
     # Read in data
-    path = 'merged_data.xlsx'
-    data = pd.read_excel(path)
+    # path = 'merged_data.xlsx'
+    # data = pd.read_excel(path)
     # data = data.iloc[:int(len(data)/20)]
     
-    # path = 'ml_data_v2/Keller_Emily_Walking4.xlsx'
-    # data = pd.read_excel(path, header=None)
+    path = 'ml_data_v2/Keller_Emily_Walking4.xlsx'
+    data = pd.read_excel(path, header=None)
 
     # Format dataset
-    # imu = IMUDataset(data)
-    # header = imu.grab_imu_header()
-    # imu.header_from_dict(header)
-    # data = imu.df.copy()
+    imu = IMUDataset(data)
+    header = imu.grab_imu_header()
+    imu.header_from_dict(header)
+    data = imu.df.copy()
 
     # Get features and labels and convert to arrays
     feats_to_use = ['Grav1_0','Grav1_1','Grav1_2','Gyro1_0','Gyro1_1','Gyro1_2','Acc1_0','Acc1_1', 'Acc1_2']

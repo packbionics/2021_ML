@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn import Module
 from torch.cuda import init
 from torch.utils.data import Dataset
 
@@ -21,7 +22,7 @@ class RNNDataset(Dataset):
         return len(self.x) - self.window - self.offset
 
 
-class RNNModel(nn.Module):
+class RNNModel(Module):
     def __init__(self, batch_size, sequence_size, hidden_size, rnn_layers) -> None:
         super().__init__()
         self.h_0 = torch.zeros(rnn_layers, batch_size, 9)
@@ -48,6 +49,36 @@ class RNNModel(nn.Module):
         x = self.relu(x)
         return self.fc_out(x)
 
+class NNDataset(Dataset):
+    def __init__(self, x, y) -> None:
+        super().__init__()
+        self.x = x
+        self.y = y
+    
+    def __getitem__(self, index):
+        return self.x[index], self.y[index]
+    
+    def __len__(self):
+        return len(self.x)
+    
+class NNModel(Module):
+    def __init__(self, features_in) -> None:
+        super().__init__()
+        print('FEATS', features_in)
+        self.linear1 = nn.Linear(9, 16)
+        self.linear2 = nn.Linear(16, 8)
+        self.dense_out = nn.Linear(8, 1)
+        self.relu = nn.ReLU()
+    
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        x = self.relu(x)
+        x = self.dense_out(x)
+        return x
+    
+        
 class ConvDataset(Dataset):
     def __init__(self, X, y) -> None:
         super().__init__()
@@ -57,7 +88,7 @@ class ConvDataset(Dataset):
     def __getitem__(self, index):
         _x = self.x[index]
 
-class ConvModel(nn.Module):
+class ConvModel(Module):
     # Assuming channels = features, 
     def __init__(self, in_channels, out_channels, kernel_size):
         super().__init__()
