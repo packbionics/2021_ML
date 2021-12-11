@@ -107,14 +107,17 @@ if __name__ == '__main__':
     # data = pd.read_excel(path)
     # data = data.iloc[:int(len(data)/20)]
     
-    path = 'ml_data_v2/Keller_Emily_Walking4.xlsx'
-    data = pd.read_excel(path, header=None)
+    # path = 'ml_data_v2/Keller_Emily_Walking4.xlsx'
+    # data = pd.read_excel(path, header=None)
+    path = 'merged_data.xlsx'
+    data = pd.read_excel(path)
+    
 
     # Format dataset
-    imu = IMUDataset(data)
-    header = imu.grab_imu_header()
-    imu.header_from_dict(header)
-    data = imu.df.copy()
+    # imu = IMUDataset(data)
+    # header = imu.grab_imu_header()
+    # imu.header_from_dict(header)
+    # data = imu.df.copy()
 
     # Get features and labels and convert to arrays
     feats_to_use = ['Grav1_0','Grav1_1','Grav1_2','Gyro1_0','Gyro1_1','Gyro1_2','Acc1_0','Acc1_1', 'Acc1_2']
@@ -132,6 +135,9 @@ if __name__ == '__main__':
 
     # Apply scaler to val and test data
     scaled_X_val, scaled_X_test = list(map(scaler.transform, [X_val, X_test]))
+    
+    plt.plot(range(len(scaled_X_train)), scaled_X_train)
+    plt.show()
 
     # Apply lowpass filter to training, validation, and test sets
     lp_filter = signal.butter(N=1, Wn=0.2, btype='low', output='sos')

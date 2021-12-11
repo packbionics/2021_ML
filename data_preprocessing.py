@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
 
 
 class IMUDataset:
@@ -44,65 +45,71 @@ class IMUDataset:
         
         self.df.columns = new_head
         
-    def multi_concat(self):
+        return new_head
+        
+    def read_single_file(self, path):
+        df = pd.read_excel(path, header=None)
+        return df.dropna(axis=1)
+        
+    def multi_concat(self, plot_features=False, plot_label=False):
         
         concat_df = pd.DataFrame()
         for file in os.listdir(self.path):
-            df = pd.read_excel(os.path.join(self.path, file), header=None)
-            df.dropna(axis=1, inplace=True)
+            df = self.read_single_file(os.path.join(self.path, file))
             concat_df = pd.concat((concat_df, df))
             
-        self.df = concat_df
-        
-    # def smooth_outliers(self):
-    #     std_df =
-    #     mean_df = []
-    #     for col_n, col_name in enumerate(self.df.columns):
+            # if plot_features and plot_label:
+            #     features = df.drop(plot_label)
+            #     plt.plot(df)
+            # elif plot_features or plot_label:
+            #     raise Exception('''To individually plot concatenated features both plot features and label parameters 
+            #                     must be defined''')
             
-    #         for row_n, value in enumerate(self.df[col_name]):
+        self.df = concat_df
+        print(concat_df.columns)
+        
+    def smooth_outliers(self):
+        stds_df = self.df.std()
+        means_df = self.df.mean()
+        for col_n, col_name in enumerate(self.df.columns):
+            
+            for row_n, value in enumerate(self.df[col_name]):
                 
-    #             if value < means[col_n] - 3 * stds[col_n] or value > means[col_n] + 3 * stds[col_n]:
-    #             # Drop entire row if the value is +/- 3 standard deviations from the column mean
-    #                 self.df.
+                if value < means_df[col_n] - 3*stds_df[col_n] or value > means_df[col_n] + 3*stds_df[col_n]:
+                    # Look at adjacent values +/- 10 excluding the value of interest
+                    smoothed_val = (self.df[col_name].iloc[row_n-10:row_n] + self.df[col_name].iloc[row_n:row_n+10]) / 2
+                    self.df[col_name].iloc[row_n] = smoothed_val
+                    
+    def plot_each_feature(self, times=['Time_0', 'Time_1'], label='Angle_0'):
+        for file in os.listdir(self.path):
+            # df = self.read_single_file(os.path.join(self.path, file))
+            df = pd.read_excel(os.path.join(self.path, file))
+            single_imu = IMUDataset(df=df)
+            header = single_imu.grab_imu_header()
+            single_imu.header_from_dict(header)
+            
+            df = single_imu.df
+            cols = times + [label]
+            df.drop(labels=cols, inplace=True, axis=1)
+            
+            
+            plt.plot(range(len(df)), df)
+            plt.title(file)
+            plt.legend(df.columns)
+            plt.show()
     
-    
-# def remove_outliers(df, means, stds):
-#     """
-#     Removes outliers > 3 or < 3 standard deviations from the mean. Updates stats.
-#     """
-#
-#     drop_indices = []
-#     for col_n, col_name in enumerate(df.columns):
-#
-#         for row_n, value in enumerate(df[col_name]):
-#
-#             if value < means[col_n] - 3 * stds[col_n] or value > means[col_n] + 3 * stds[col_n]:
-#                 # Drop entire row if the value is +/- 3 standard deviations from the column mean
-#                 drop_indices.append(row_n)
-#
-#     # Remove duplicate indices
-#     drop_indices = list(set(drop_indices))
-#
-#     # Save identified outliers
-#     self.outliers = self.data.iloc[drop_indices]
-#
-#     # Drop outliers and reset index
-#     self.data.drop(index=drop_indices, inplace=True)
-#     self.data.reset_index(drop=True, inplace=True)
-#
-#     # Recompute stats after dropping outliers
-#     print(self.means)
-#     print(self.stds)
-#     self.stats()
-
 
 if __name__ == '__main__':
     path = 'ml_data_v2'
     # path = 'train_data/Keller_Emily_Walking4.xlsx'
     # data = pd.read_excel(path, header=None)
-    imu = IMUDataset(path=path)
-    imu.multi_concat()
-    header = imu.grab_imu_header()
-    imu.header_from_dict(header)
-    imu.df.to_excel('merged_data.xlsx', index=False)
+    
+    # imu = IMUDataset(path=path)
+    # imu.multi_concat()
+    # header = imu.grab_imu_header()
+    # imu.header_from_dict(header)
+    # imu.df.to_excel('merged_data.xlsx', index=False)
+    
+    imu = IMUDataset(path='ml_data_v2')
+    imu.plot_each_feature()
     
